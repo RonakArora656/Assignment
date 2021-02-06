@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <arpa/inet.h>
-#define SIZE 1024
+#define SIZE 256000
 
 void write_file(int sockfd){
   int n;
