@@ -1,67 +1,65 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <arpa/inet.h>
-#define SIZE 256000
+#include <unistd.h>
+#include <sys/types.h> 
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <ctype.h>
 
-void write_file(int sockfd){
-  int n;
-  FILE *fp;
-  char *filename = "recv.txt";
-  char buffer[SIZE];
 
-  fp = fopen(filename, "w");
-  while (1) {
-    n = recv(sockfd, buffer, SIZE, 0);
-    if (n <= 0){
-      break;
-      return;
-    }
-    fprintf(fp, "%s", buffer);
-    bzero(buffer, SIZE);
-  }
-  return;
+void error(const char *msg)
+{
+    perror(msg);
+    exit(1);
 }
 
-int main(){
-  char *ip = "127.0.0.1";
-  int port = 8080;
-  int e;
-
-  int sockfd, new_sock;
-  struct sockaddr_in server_addr, new_addr;
-  socklen_t addr_size;
-  char buffer[SIZE];
-
-  sockfd = socket(AF_INET, SOCK_STREAM, 0);
-  if(sockfd < 0) {
-    perror("[-]Error in socket");
-    exit(1);
-  }
-  printf("[+]Server socket created successfully.\n");
-
-  server_addr.sin_family = AF_INET;
-  server_addr.sin_port = port;
-  server_addr.sin_addr.s_addr = inet_addr(ip);
-
-  e = bind(sockfd, (struct sockaddr*)&server_addr, sizeof(server_addr));
-  if(e < 0) {
-    perror("[-]Error in bind");
-    exit(1);
-  }
-  printf("[+]Binding successfull.\n");
-
-  if(listen(sockfd, 10) == 0){
-		printf("[+]Listening....\n");
-	}else{
-		perror("[-]Error in listening");
-    exit(1);
-	}
-
-  addr_size = sizeof(new_addr);
-  new_sock = accept(sockfd, (struct sockaddr*)&new_addr, &addr_size);
-  write_file(new_sock);
-  printf("[+]Data written in the file successfully.\n");
-
-  return 0;
+int main(int argc, char *argv[])
+{
+     int sockfd, newsockfd, portno;
+     socklen_t clilen;
+     char buffer[512];
+     struct sockaddr_in serv_addr, cli_addr;
+     int n;
+     if (argc < 2) {
+         fprintf(stderr,"ERROR, no port provided\n");
+         exit(1);
+     }
+     sockfd = socket(AF_INET, SOCK_STREAM, 0);
+     if (sockfd < 0) 
+        error("ERROR opening socket");
+     bzero((char *) &serv_addr, sizeof(serv_addr));
+     portno = atoi(argv[1]);
+     serv_addr.sin_family = AF_INET;
+     serv_addr.sin_addr.s_addr = INADDR_ANY;
+     serv_addr.sin_port = htons(portno);
+     if (bind(sockfd, (struct sockaddr *) &serv_addr,
+              sizeof(serv_addr)) < 0) 
+              error("ERROR on binding");
+     listen(sockfd,5);
+     clilen = sizeof(cli_addr);
+     newsockfd = accept(sockfd, 
+                 (struct sockaddr *) &cli_addr, 
+                 &clilen);
+     if (newsockfd < 0) 
+          error("ERROR on accept");
+          
+          
+          
+          FILE *fp;
+         int ch = 0;
+            fp = fopen("glad_receive.txt","a");            
+            int words;
+		read(newsockfd, &words, sizeof(int));
+          while(ch != words)
+       	   {
+        	 read(newsockfd , buffer , 512); 
+	   	 fprintf(fp , " %s" , buffer);   
+		 ch++;
+	   }
+     	printf("The file was received successfully\n");
+	   printf("The new file created is glad5.txt");
+     close(newsockfd);
+     close(sockfd);
+     return 0; 
 }
